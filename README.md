@@ -14,7 +14,7 @@ This plugin fixes both. Users and tokens live in dedicated database tables, each
 ## Features
 
 - Create / edit / delete users from the **Users & API Tokens** plugin page
-- Two roles: **admin** (full UI access) and **integration** (API-only; self-service token management for their own account)
+- Two roles: **admin** (full UI access) and **integration** (locked to this plugin's page — can only manage their own account/tokens; redirected away from `tools.php`, the plugins list, the URL shortener UI, etc.)
 - **Multiple labeled tokens per user** — e.g. one user named `flowlu` with separate tokens for `Production`, `Staging`, `Webhook receiver`
 - **Per-token rotation and revocation** — kill one token without affecting the others
 - **Last-used timestamp** per token, so you can see which tokens are actually in use before retiring them
@@ -132,6 +132,14 @@ Add these to `user/config.php` to override defaults:
 ```php
 // Enable verbose error_log output for debugging
 define('BDM_UAT_DEBUG', true);
+
+// Extra YOURLS admin pages that integration-role users may visit.
+// Comma-separated list of yourls_html_head() context names. The plugin
+// page is always allowed; this is for opening up additional pages.
+// Common contexts: 'index' (URL shortener), 'tools' (NOT recommended -
+// exposes COOKIEKEY signature), 'plugins' (NOT recommended - allows
+// activate/deactivate). Example to let integrations use the shortener UI:
+define('BDM_UAT_INTEGRATION_ALLOWED', 'index');
 ```
 
 ## Troubleshooting

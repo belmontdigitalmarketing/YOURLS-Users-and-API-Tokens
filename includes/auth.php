@@ -124,3 +124,60 @@ function bdm_uat_inject_users_into_globals() {
         $yourls_user_passwords[$u->username] = $u->password_hash;
     }
 }
+
+// ============================================================================
+// INTEGRATION-ROLE PAGE RESTRICTION
+// ============================================================================
+
+/**
+ * Integration-role users may only see our plugin page in the admin UI.
+ * Any other admin page (tools.php, plugins.php list, index.php shortener,
+ * etc.) bounces them back to the plugin page via yourls_redirect().
+ *
+ * Why: native YOURLS has no role concept. Without this guard an
+ * "integration" user can visit /admin/tools.php and read their
+ * COOKIEKEY-derived signature - which the plugin cannot revoke,
+ * defeating the per-integration token model. They can also activate
+ * arbitrary plugins from /admin/plugins.php, which is a clear
+ * privilege escalation path.
+ *
+ * We hook pre_html_head because that's the first action YOURLS fires
+ * after authentication has run but before any output - allowing a
+ * clean Location: redirect.
+ *
+ * Allowed contexts can be extended via the BDM_UAT_INTEGRATION_ALLOWED
+ * constant (comma-separated context names) in user/config.php. The
+ * plugin page is always allowed.
+ */
+yourls_add_action('pre_html_head', 'bdm_uat_restrict_integration_pages');
+
+function bdm_uat_restrict_integration_pages($context = '', $title = '') {
+    // Unauthenticated (login screen, etc.) - nothing to enforce.
+    if (!defined('YOURLS_USER') || YOURLS_USER === '' || YOURLS_USER === false) {
+        return;
+    }
+
+    // Build the allowlist. Our plugin page is always permitted.
+    $allowed = array('plugin_page_bdm_users');
+    if (defined('BDM_UAT_INTEGRATION_ALLOWED') && BDM_UAT_INTEGRATION_ALLOWED) {
+        foreach (explode(',', BDM_UAT_INTEGRATION_ALLOWED) as $extra) {
+            $extra = trim($extra);
+            if ($extra !== '') $allowed[] = $extra;
+        }
+    }
+
+    if (in_array($context, $allowed, true)) {
+        return;
+    }
+
+    // Only restrict integration-role users. Anything else (admin role,
+    // or a config-only emergency admin with no DB row) gets full access.
+    $user = bdm_uat_get_user_by_username(YOURLS_USER);
+    if (!$user || $user->role !== 'integration') {
+        return;
+    }
+
+    bdm_uat_debug_log("Restricting integration user '" . YOURLS_USER . "' from context '$context'");
+    yourls_redirect(yourls_admin_url('plugins.php?page=bdm_users'), 302);
+    exit;
+}
