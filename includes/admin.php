@@ -95,11 +95,18 @@ function bdm_uat_forbidden_flash($message = 'You do not have permission to perfo
 // ============================================================================
 
 function bdm_uat_handle_post($action) {
+    // Verify our own nonce in-band rather than using yourls_verify_nonce(),
+    // which calls yourls_die() on failure and would prevent us from returning
+    // a structured flash to the page renderer.
     $nonce = isset($_REQUEST['nonce']) ? (string) $_REQUEST['nonce'] : '';
-    // yourls_verify_nonce() die()s on failure when called with 2 args - no
-    // need to inspect a return value. A missing or expired nonce terminates
-    // the request before any mutation runs.
-    yourls_verify_nonce('bdm_uat_' . $action, $nonce);
+    $expected = yourls_create_nonce('bdm_uat_' . $action);
+    if ($nonce === '' || !hash_equals($expected, $nonce)) {
+        return array(
+            'errors'    => array('Unauthorized action or expired link. Refresh the page and try again.'),
+            'messages'  => array(),
+            'new_token' => null,
+        );
+    }
 
     switch ($action) {
         case 'create_user':     return bdm_uat_post_create_user();
@@ -114,9 +121,12 @@ function bdm_uat_handle_post($action) {
 
 function bdm_uat_post_create_user() {
     if (!bdm_uat_check_admin()) return bdm_uat_forbidden_flash('Admin privileges required.');
+    // Form fields are prefixed (bdm_username / bdm_password) to avoid colliding
+    // with YOURLS's auto-login handler, which fires yourls_verify_nonce('admin_login')
+    // whenever both `username` AND `password` are present in an admin POST.
     $r = bdm_uat_create_user(
-        isset($_POST['username']) ? $_POST['username'] : '',
-        isset($_POST['password']) ? $_POST['password'] : '',
+        isset($_POST['bdm_username']) ? $_POST['bdm_username'] : '',
+        isset($_POST['bdm_password']) ? $_POST['bdm_password'] : '',
         isset($_POST['role']) ? $_POST['role'] : 'integration'
     );
     if (!$r['ok']) {
@@ -141,8 +151,8 @@ function bdm_uat_post_update_user() {
     if (bdm_uat_current_is_admin() && isset($_POST['role']) && $_POST['role'] !== '') {
         $role = (string) $_POST['role'];
     }
-    if (isset($_POST['password']) && $_POST['password'] !== '') {
-        $password = (string) $_POST['password'];
+    if (isset($_POST['bdm_password']) && $_POST['bdm_password'] !== '') {
+        $password = (string) $_POST['bdm_password'];
     }
 
     $r = bdm_uat_update_user($user_id, $role, $password);
@@ -321,12 +331,12 @@ function bdm_uat_render_list($flash) {
                 <input type="hidden" name="nonce" value="<?php echo bdm_uat_h(yourls_create_nonce('bdm_uat_create_user')); ?>">
                 <p>
                     <label>Username<br>
-                        <input type="text" name="username" required pattern="[A-Za-z0-9_.\-]{1,64}" maxlength="64">
+                        <input type="text" name="bdm_username" required pattern="[A-Za-z0-9_.\-]{1,64}" maxlength="64">
                     </label>
                 </p>
                 <p>
                     <label>Password (min 8 chars)<br>
-                        <input type="password" name="password" required minlength="8" autocomplete="new-password">
+                        <input type="password" name="bdm_password" required minlength="8" autocomplete="new-password">
                     </label>
                 </p>
                 <p>
@@ -376,7 +386,7 @@ function bdm_uat_render_user_detail($user, $flash) {
                 <?php endif; ?>
                 <p>
                     <label>New password (leave blank to keep current)<br>
-                        <input type="password" name="password" minlength="8" autocomplete="new-password">
+                        <input type="password" name="bdm_password" minlength="8" autocomplete="new-password">
                     </label>
                 </p>
                 <p><button type="submit" class="button">Save changes</button></p>

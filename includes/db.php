@@ -56,8 +56,63 @@ function bdm_uat_maybe_install() {
             return; // Failure - leave the version untouched so we retry next load
         }
     }
+    if ($current < 2) {
+        if (!bdm_uat_install_v2()) {
+            return;
+        }
+    }
 
     yourls_update_option('bdm_uat_db_version', BDM_UAT_DB_VERSION);
+}
+
+/**
+ * v2: rewrap any password_hash that's a raw crypt-style hash (looks like
+ * "$2y$10$..." or similar) with YOURLS's phpass: prefix and $-to-! escape.
+ * Without this wrapper, YOURLS treats the hash as plaintext - which both
+ * breaks login for affected users AND triggers the "Could not auto-encrypt
+ * passwords" warning on every admin load.
+ *
+ * Truly plaintext rows (migrated as-is from a plaintext config.php) are
+ * left alone: we can't auto-upgrade them without the password, and YOURLS
+ * still accepts plaintext via its compatibility branch.
+ */
+function bdm_uat_install_v2() {
+    global $ydb;
+
+    try {
+        $rows = $ydb->fetchObjects(
+            "SELECT id, password_hash FROM `" . bdm_uat_users_table() . "`"
+        );
+    } catch (Exception $e) {
+        bdm_uat_error_log('v2 migration: select failed: ' . $e->getMessage());
+        return false;
+    }
+
+    foreach ($rows as $row) {
+        $h = (string) $row->password_hash;
+        // Already wrapped (phpass:... or md5:...): skip
+        if (strpos($h, 'phpass:') === 0 || strpos($h, 'md5:') === 0) {
+            continue;
+        }
+        // Raw crypt-style hash that's missing the wrapper - rewrap
+        if (substr($h, 0, 1) === '$' && substr_count($h, '$') >= 3) {
+            $wrapped = 'phpass:' . str_replace('$', '!', $h);
+            try {
+                $ydb->fetchAffected(
+                    "UPDATE `" . bdm_uat_users_table() . "`
+                     SET password_hash = :p WHERE id = :id",
+                    array('p' => $wrapped, 'id' => (int) $row->id)
+                );
+                bdm_uat_debug_log("v2: rewrapped password_hash for user id {$row->id}");
+            } catch (Exception $e) {
+                bdm_uat_error_log("v2 migration: update for id {$row->id} failed: " . $e->getMessage());
+                return false;
+            }
+        }
+        // else: plaintext - leave it; YOURLS still accepts it for login
+    }
+
+    return true;
 }
 
 /**

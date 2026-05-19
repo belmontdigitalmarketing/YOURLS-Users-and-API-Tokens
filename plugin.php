@@ -17,8 +17,8 @@ if (!defined('YOURLS_ABSPATH')) {
 // CONFIGURATION
 // ============================================================================
 
-define('BDM_UAT_VERSION', '1.0.0');
-define('BDM_UAT_DB_VERSION', 1);
+define('BDM_UAT_VERSION', '1.0.1');
+define('BDM_UAT_DB_VERSION', 2);
 define('BDM_UAT_DIR', __DIR__);
 
 // Debug mode: add define('BDM_UAT_DEBUG', true); to config.php to enable

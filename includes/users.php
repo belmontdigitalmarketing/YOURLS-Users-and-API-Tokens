@@ -210,15 +210,20 @@ function bdm_uat_record_login($id) {
 // ============================================================================
 
 /**
- * Hash a password using YOURLS's phpass implementation so it's
- * accepted by yourls_check_password_hash() on login.
+ * Hash a password in the exact storage format YOURLS expects in
+ * $yourls_user_passwords: `phpass:` prefix + the bcrypt hash with `$`
+ * characters replaced by `!` (YOURLS's escape so the value is safe to
+ * embed in PHP source code).
+ *
+ * Without this wrapper, yourls_check_password_hash() treats the raw
+ * bcrypt hash as plaintext - the user can't log in AND YOURLS triggers
+ * its "Could not auto-encrypt passwords" warning on every admin load.
  */
 function bdm_uat_hash_password($password) {
     if (function_exists('yourls_phpass_hash')) {
-        return yourls_phpass_hash($password);
+        $hash = yourls_phpass_hash($password);
+    } else {
+        $hash = password_hash($password, PASSWORD_DEFAULT);
     }
-    // Fallback: PHP's password_hash (bcrypt). YOURLS check_password_hash
-    // recognizes phpass-style hashes; for the fallback we'd need to verify
-    // separately, but in practice yourls_phpass_hash() exists in 1.8+.
-    return password_hash($password, PASSWORD_DEFAULT);
+    return 'phpass:' . str_replace('$', '!', $hash);
 }
