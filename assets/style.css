@@ -1,0 +1,127 @@
+/* Users & API Tokens - admin UI styles */
+
+.bdm-uat {
+    max-width: 960px;
+}
+
+.bdm-uat h2 {
+    margin-top: 1em;
+}
+
+.bdm-uat-card {
+    background: #fff;
+    border: 1px solid #d5d5d5;
+    border-radius: 4px;
+    padding: 1em 1.5em;
+    margin: 1em 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.bdm-uat-card h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: .3em;
+}
+
+.bdm-uat table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+.bdm-uat table th,
+.bdm-uat table td {
+    text-align: left;
+    padding: .5em .75em;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.bdm-uat table th {
+    background: #f6f6f6;
+    font-weight: 600;
+}
+
+.bdm-uat code {
+    background: #f4f4f4;
+    padding: .15em .35em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.bdm-uat-revoked {
+    opacity: 0.55;
+}
+
+.bdm-uat-legacy-note td {
+    background: #fff8e1;
+    border-bottom: 1px solid #f3e5ab;
+}
+
+.bdm-uat-badge {
+    display: inline-block;
+    background: #f3e5ab;
+    color: #6b5500;
+    padding: 0 .4em;
+    border-radius: 3px;
+    font-size: .75em;
+    margin-left: .3em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.bdm-uat-new-token {
+    background: #e3f2e1;
+    border: 1px solid #8bc784;
+    border-radius: 4px;
+    padding: 1em 1.25em;
+    margin: 1em 0;
+}
+
+.bdm-uat-token-display {
+    display: block;
+    font-size: 1.1em;
+    padding: .6em .8em;
+    background: #fff;
+    border: 1px solid #c8e6c9;
+    word-break: break-all;
+    user-select: all;
+}
+
+.bdm-uat-message {
+    background: #e3f2e1;
+    border-left: 4px solid #4caf50;
+    padding: .75em 1em;
+    margin: 1em 0;
+}
+
+.bdm-uat-error {
+    background: #fce8e6;
+    border-left: 4px solid #d93025;
+    padding: .75em 1em;
+    margin: 1em 0;
+    color: #80261c;
+}
+
+.bdm-uat .button.bdm-uat-danger {
+    color: #fff;
+    background: #d93025;
+    border-color: #b3261a;
+}
+
+.bdm-uat .button.bdm-uat-danger:hover {
+    background: #b3261a;
+}
+
+.bdm-uat form p {
+    margin: .75em 0;
+}
+
+.bdm-uat input[type="text"],
+.bdm-uat input[type="password"],
+.bdm-uat select {
+    padding: .35em .5em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    min-width: 240px;
+}
