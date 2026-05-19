@@ -156,6 +156,23 @@ The plugin refuses operations that would leave the system with zero admin-role u
 **"Plugin page doesn't load / blank screen"**
 Check the PHP error log for `Users & API Tokens ERROR:` entries. The most common cause is a `CREATE TABLE` failure — confirm the database user has DDL privileges on first activation.
 
+**"I got locked into the plugin page and can't reach the admin UI"**
+This can happen if you accidentally demoted yourself to `integration` role (the plugin guards against demoting the *last* admin, but not against demoting yourself if another admin exists). Append `?bdm_norestrict=1` to any admin URL to bypass the integration-role redirect for that one request — e.g. `/admin/plugins.php?bdm_norestrict=1`. Then promote yourself back to admin or have another admin do it.
+
+## Changelog
+
+**v1.0.4** — Tightened the integration-role allowlist to *only* this plugin's admin page. Previous releases allowed any plugin's `plugin_page_*` context, which let integration users open and modify other plugins' settings.
+
+**v1.0.3** — Fixed the integration-role restriction proper. The previous release's redirect loop / HTTP 500 were caused by misreading the YOURLS action signature: `yourls_do_action('pre_html_head', $context, $title)` delivers callbacks a single array argument, not positional values. Now unwrapped correctly.
+
+**v1.0.2** — Added integration-role page restriction: integration users are redirected away from `tools.php`, the plugins list, the URL shortener, etc., and locked to this plugin's page. New `BDM_UAT_INTEGRATION_ALLOWED` config flag and `?bdm_norestrict=1` emergency bypass. *(Shipped with bugs; superseded by v1.0.3 / v1.0.4.)*
+
+**v1.0.1** — Two fixes:
+- Stored password hashes are now wrapped in YOURLS's expected `phpass:!2y!10!...!` format. v1.0.0 stored raw bcrypt output, which YOURLS treated as plaintext — meaning users created through the UI couldn't actually log in, and the admin saw a recurring "Could not auto-encrypt passwords" notice. A v2 schema migration auto-rewraps any broken rows on next page load.
+- Form fields on create/update-user are now prefixed `bdm_username` / `bdm_password`. The unprefixed pair was triggering YOURLS's auto-login handler, which fires `yourls_verify_nonce('admin_login')` against your form's nonce and dies with "Unauthorized action or expired link" before your handler ever runs.
+
+**v1.0.0** — Initial release. Two DB tables, multiple labeled tokens per user, admin/integration roles, COOKIEKEY-derived legacy token capture on activation, idempotent install with schema versioning.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

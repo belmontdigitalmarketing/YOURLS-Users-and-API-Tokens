@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: Users & API Tokens
-Plugin URI: https://github.com/Belmont-Digital/YOURLS-Users-and-API-Tokens
+Plugin URI: https://github.com/belmontdigitalmarketing/YOURLS-Users-and-API-Tokens
 Description: Manage YOURLS users and per-integration API tokens from the admin dashboard. Each token is independently labeled, rotatable, and revocable - no more sharing the master signature with every CRM and webhook.
-Version: 1.0.0
+Version: 1.0.4
 Author: Belmont Digital
 Author URI: https://belmontdigitalmarketing.com
 */
