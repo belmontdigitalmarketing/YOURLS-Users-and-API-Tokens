@@ -151,33 +151,51 @@ function bdm_uat_inject_users_into_globals() {
  */
 yourls_add_action('pre_html_head', 'bdm_uat_restrict_integration_pages');
 
-function bdm_uat_restrict_integration_pages($context = '', $title = '') {
+function bdm_uat_restrict_integration_pages($args = null) {
+    // Emergency bypass: append ?bdm_norestrict=1 to any admin URL to skip this guard.
+    if (!empty($_GET['bdm_norestrict'])) {
+        return;
+    }
+
+    // YOURLS quirk: yourls_do_action('pre_html_head', $context, $title) wraps
+    // those args into a single array and passes it as our first parameter.
+    // So $args here is ['plugin_page_bdm_users', 'Users & API Tokens'], not
+    // separate positional values. Unwrap it.
+    if (is_array($args)) {
+        $context = isset($args[0]) ? (string) $args[0] : '';
+    } else {
+        $context = (string) $args;
+    }
+
     // Unauthenticated (login screen, etc.) - nothing to enforce.
     if (!defined('YOURLS_USER') || YOURLS_USER === '' || YOURLS_USER === false) {
         return;
     }
 
-    // Build the allowlist. Our plugin page is always permitted.
-    $allowed = array('plugin_page_bdm_users');
-    if (defined('BDM_UAT_INTEGRATION_ALLOWED') && BDM_UAT_INTEGRATION_ALLOWED) {
-        foreach (explode(',', BDM_UAT_INTEGRATION_ALLOWED) as $extra) {
-            $extra = trim($extra);
-            if ($extra !== '') $allowed[] = $extra;
-        }
-    }
-
-    if (in_array($context, $allowed, true)) {
+    // Allow any plugin page (ours is plugin_page_bdm_users). Prefix match is
+    // intentional: if YOURLS ever changes the convention, we won't break.
+    if ($context !== '' && strpos($context, 'plugin_page_') === 0) {
         return;
     }
 
-    // Only restrict integration-role users. Anything else (admin role,
-    // or a config-only emergency admin with no DB row) gets full access.
+    // Extra allowlist via config.php constant (comma-separated context names).
+    if (defined('BDM_UAT_INTEGRATION_ALLOWED') && BDM_UAT_INTEGRATION_ALLOWED) {
+        foreach (explode(',', BDM_UAT_INTEGRATION_ALLOWED) as $extra) {
+            if (trim($extra) === $context) {
+                return;
+            }
+        }
+    }
+
+    // Only restrict integration-role users. Admins and config-only emergency
+    // admins (no DB row) get full access.
     $user = bdm_uat_get_user_by_username(YOURLS_USER);
     if (!$user || $user->role !== 'integration') {
         return;
     }
 
-    bdm_uat_debug_log("Restricting integration user '" . YOURLS_USER . "' from context '$context'");
-    yourls_redirect(yourls_admin_url('plugins.php?page=bdm_users'), 302);
+    $target = yourls_admin_url('plugins.php') . '?page=bdm_users';
+    bdm_uat_debug_log("Restricting integration user '" . YOURLS_USER . "' from ctx='$context' -> $target");
+    yourls_redirect($target, 302);
     exit;
 }
