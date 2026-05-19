@@ -172,9 +172,10 @@ function bdm_uat_restrict_integration_pages($args = null) {
         return;
     }
 
-    // Allow any plugin page (ours is plugin_page_bdm_users). Prefix match is
-    // intentional: if YOURLS ever changes the convention, we won't break.
-    if ($context !== '' && strpos($context, 'plugin_page_') === 0) {
+    // Allow ONLY our plugin's page. Other plugins' admin pages
+    // (plugin_page_random_shorturls, plugin_page_fallback_url, etc.)
+    // would let integration users tweak settings they shouldn't touch.
+    if ($context === 'plugin_page_bdm_users') {
         return;
     }
 
